@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>INTERFACE-ViViT</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/style.css?v=1.3') }}">
+    <!-- <link rel="stylesheet" href="/static/css/style.css"> -->
+</head>
+<body>
+    <header class="title">
+        <h1>Action Recognition DEMO</h1>
+    </header>
+
+    <div class="main-display">
+        <section class="display">
+
+            <form method="post" enctype="multipart/form-data" onsubmit=sendData(event)>
+
+                <button type="submit" class="sendVideo">Subir video</button>
+
+                <div class="container">
+                
+                    <input type="file" accept="video/*" id="file" class="upload-input" name="video">
+                    <label for="file" class="upload-label"></label>
+
+
+                    <div class="video-container">
+                        <video id="videoPlayer" width="270" height="480" loop muted></video>
+                    </div>
+                </div>
+
+            </form>
+
+        </section>
+        <section class="prediction">
+            <h1>Prediction</h1>
+            <p class="model-response"></p>
+        </section>
+        <section class="frames-display">
+            <h1>Fotogramas analizados</h1>
+            <div class="frames">
+
+            </div>
+        </section>
+    </div>
+    
+
+    <script>
+
+        const videoInput = document.querySelector("#file");
+        const videoPlayer=document.querySelector('#videoPlayer');
+        const label=document.querySelector('.upload-label');
+
+        const button=document.querySelector('.sendVideo');
+
+        videoInput.addEventListener('change',function(){
+            const file=this.files[0];
+            if (file){
+                const videoURL=URL.createObjectURL(file);
+
+                label.style.display='none';
+
+                videoPlayer.style.width='270';
+                videoPlayer.style.height='480';
+
+                videoPlayer.src=videoURL;
+                videoPlayer.load();
+                videoPlayer.play();
+
+            }
+        });
+
+        async function sendData(event){
+            
+            
+            event.preventDefault();
+            const form = event.target;
+            const formData=new FormData(form);
+
+            try {
+
+                button.innerHTML='';
+                button.innerHTML='Analizando video ...';
+
+                button.style.width='240px';
+
+                const response = await fetch('/send_video',{
+                    method:'POST',
+                    body:formData
+                });
+
+
+                if (!response) throw new Error("Error a(l subir el video");
+                
+
+                const data = await response.json();
+
+                const container=document.querySelector(".frames");
+                container.innerHTML='';
+                data.frames.forEach(base64=>{
+                    const img=document.createElement("img");
+                    img.classList.add("frame");
+                    img.src="data:image/jpeg;base64,"+base64;
+                    container.appendChild(img);
+
+                });
+                
+                const prediction=document.querySelector('.model-response');
+                prediction.innerHTML='La acción detectada es: '+data["model_response"];
+
+                button.innerHTML='Subir video';
+                button.style.width='160px';
+            }
+            catch (err){
+                console.log("error");
+            }
+
+        }
+
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js"></script>
+</body>
+</html>
